@@ -1,0 +1,169 @@
+.container {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+/* Khối A */
+.section-a {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* Các ô trong khối A */
+.box {
+  flex: 1;
+  background-color: white;
+  padding: 15px;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  min-width: 280px;
+}
+
+.image-box img {
+  width: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.row {
+  margin-bottom: 12px;
+}
+
+.row-flex {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-inline {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fruit-input {
+  flex: 1 1 auto;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  min-width: 200px;
+}
+
+.submit-button, .location-button {
+  padding: 10px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.submit-button:hover, .location-button:hover {
+  background-color: #388e3c;
+}
+
+.location-button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}
+
+/* Khối B - Bảng */
+.section-b {
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.section-title {
+  font-size: 20px;
+  color: #388e3c;
+  margin-bottom: 20px;
+}
+
+.monitoring-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+.monitoring-table th, .monitoring-table td {
+  border: 1px solid #ccc;
+  padding: 12px;
+  text-align: left;
+}
+
+.monitoring-table th {
+  background-color: #4caf50;
+  color: white;
+}
+
+.monitoring-table tr:nth-child(even) {
+  background-color: #f4f4f4;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 15px;
+  color: #388e3c;
+  font-weight: bold;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.back-link:hover {
+  color: #2e7031;
+}
+
+/* --------------------------- */
+/* 📱 Responsive Design */
+/* --------------------------- */
+@media screen and (max-width: 992px) {
+  .section-a {
+    flex-direction: column;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .form-inline {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .submit-button, .location-button {
+    width: 100%;
+  }
+
+  .fruit-input {
+    width: 100%;
+  }
+
+  .row-flex {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .section-title {
+    font-size: 18px;
+  }
+
+  .monitoring-table th, .monitoring-table td {
+    font-size: 14px;
+    padding: 10px;
+  }
+}
+
+.App h1 {
+  text-align: center;
+  color: #388e3c;
+}
