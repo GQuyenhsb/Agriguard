@@ -3,11 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './HomePage.css';
 import logoMenu from '../assets/logo-menu.jpg';
+import { API_BASE_URL } from '../config';
 
 function About({ addProject, projects, setProjects }) {
   const [projectName, setProjectName] = useState('');
   const [notifications, setNotifications] = useState([]);
   const navigate = useNavigate();
+  const API_BASE_URL = "https://agriguard-backend.onrender.com";
 
   const fetchProjectTasks = async () => {
     try {
@@ -28,7 +30,7 @@ function About({ addProject, projects, setProjects }) {
 
       for (const project of projects) {
         try {
-          const response = await axios.post('http://localhost:5000/api/project/load', {
+          const response = await axios.post(`${API_BASE_URL}/api/project/load`, {
             projectId: project.id,
           });
 

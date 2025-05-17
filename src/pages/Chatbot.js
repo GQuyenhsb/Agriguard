@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Chatbot.css';
 import dashboardImage from '../assets/tuoi-cay.png'; 
+import { API_BASE_URL } from '../config';
+
 
 function Chatbot({ projectId, projectName, createdAt  }) {
   const [fruitType, setFruitType] = useState('');
@@ -23,6 +25,7 @@ function Chatbot({ projectId, projectName, createdAt  }) {
   const hasFetchedLocation = useRef(false);
   const isFirstSave = useRef(true);
   const hasGeneratedPrompt = useRef(false);
+  const API_BASE_URL = "https://agriguard-backend.onrender.com";
 
 
 
@@ -35,7 +38,7 @@ function Chatbot({ projectId, projectName, createdAt  }) {
     hasLoadedData.current = true;
     const loadProjectData = async () => {
       try {
-        const response = await axios.post('http://localhost:5000/api/project/load', { projectId });
+        const response = await axios.post(`${API_BASE_URL}/api/project/load`, { projectId });
         if (response.data.success) {
           const data = response.data.data;
           setFruitType(data.fruitType || '');
@@ -97,7 +100,7 @@ function Chatbot({ projectId, projectName, createdAt  }) {
       };
   
       try {
-        await axios.post('http://localhost:5000/api/project/save', {
+        await axios.post(`${API_BASE_URL}/api/project/save`, {
           projectId,
           data: payload
         });
@@ -135,7 +138,7 @@ function Chatbot({ projectId, projectName, createdAt  }) {
     setWeatherLoading(true);
     try {
       console.log(`Fetching weather for ${cityName}`);
-      const response = await axios.post('http://localhost:5000/api/weather', {
+      const response = await axios.post(`${API_BASE_URL}/api/weather`, {
         city: cityName,
       });
       const weatherData = response.data.result;
@@ -172,7 +175,7 @@ function Chatbot({ projectId, projectName, createdAt  }) {
   navigator.geolocation.getCurrentPosition(
     async ({ coords }) => {
       try {
-        const res = await axios.post('http://localhost:5000/api/location', {
+        const res = await axios.post(`${API_BASE_URL}/api/location`, {
           lat: coords.latitude,
           lon: coords.longitude,
         });
@@ -298,7 +301,7 @@ ${lastResult}
     isHandlingPrompt.current = true; // 🟢 bật cờ
   
     try {
-      const res = await axios.post('http://localhost:5000/api/generate', {
+      const res = await axios.post(`${API_BASE_URL}/api/generate`, {
         prompt: `Dự án ${projectName} (ID: ${projectId}): ${prompt}`
       });
       const newResult = res.data.result;
@@ -328,7 +331,7 @@ ${lastResult}
     setLoading(true);
     const updatePrompt = generateUpdatePrompt();
     try {
-      const response = await axios.post('http://localhost:5000/api/generate', {
+      const response = await axios.post(`${API_BASE_URL}/api/generate`, {
         prompt: `Dự án ${projectName} (ID: ${projectId}): ${updatePrompt}`,
       });
       const newResult = response.data.result;
@@ -367,7 +370,7 @@ ${lastResult}
 
     try {
       console.log(`Deleting data for project-${projectId}`);
-      const response = await axios.post('http://localhost:5000/api/project/delete', { projectId });
+      const response = await axios.post(`${API_BASE_URL}/api/project/delete`, { projectId });
       if (response.data.success) {
         console.log(`Successfully deleted data for project-${projectId}`);
         setFruitType('');
