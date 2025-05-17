@@ -51,6 +51,14 @@ function HomePage() {
           <p>Kiểm soát cây trồng thông qua dữ liệu GPS</p>
         </div>
       </div>
+      <footer className="footer">
+      <div className="footer-container">
+        <p>© 2025 AgriGuard. All rights reserved.</p>
+        <p>
+          Made by Trương Gia Quyền - <a href="https://github.com/your-repo" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </p>
+      </div>
+    </footer>
     </div>
   );
 }

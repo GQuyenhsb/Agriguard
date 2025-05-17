@@ -1,6 +1,5 @@
-// 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './HomePage.css';
 import logoMenu from '../assets/logo-menu.jpg';
@@ -8,6 +7,7 @@ import logoMenu from '../assets/logo-menu.jpg';
 function About({ addProject, projects, setProjects }) {
   const [projectName, setProjectName] = useState('');
   const [notifications, setNotifications] = useState([]);
+  const navigate = useNavigate();
 
   const fetchProjectTasks = async () => {
     try {
@@ -16,7 +16,7 @@ function About({ addProject, projects, setProjects }) {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
-      }).split('/').join('/');
+      });
 
       const currentHourMinute = currentTime.toLocaleTimeString('vi-VN', {
         hour: '2-digit',
@@ -100,7 +100,7 @@ function About({ addProject, projects, setProjects }) {
     }
     const now = new Date();
     const newProject = {
-      id: Date.now(),
+      id: Date.now().toString(), // Đảm bảo là string để route match đúng
       name: projectName,
       createdAt: {
         date: now.toLocaleDateString('vi-VN'),
@@ -108,7 +108,7 @@ function About({ addProject, projects, setProjects }) {
       },
       patientData: {},
     };
-    
+
     addProject(newProject);
     setProjectName('');
   };
@@ -123,10 +123,11 @@ function About({ addProject, projects, setProjects }) {
   return (
     <div className="about-page">
       <nav className="navbar">
-      <div className="logo">
-          <img src={logoMenu} style={{width:"60px"}} alt=''/>
+        <div className="logo">
+          <img src={logoMenu} style={{ width: '60px' }} alt="" />
           <span className="logo-text">AgriGuard</span>
-        </div>        <ul>
+        </div>
+        <ul>
           <li><Link to="/">Trang Chủ</Link></li>
           <li><Link to="/about">Dự Án</Link></li>
         </ul>
@@ -171,38 +172,60 @@ function About({ addProject, projects, setProjects }) {
             ) : (
               <>
                 <button onClick={handleClearData} className="clear-btn">Xóa tất cả</button>
-               
+
                 <table className="project-table">
-  <thead>
-    <tr>
-      <th style={{textAlign:'center'}}>Tên Dự Án</th>
-      <th style={{textAlign:'center'}}>Ngày Tạo</th>
-      <th style={{textAlign:'center'}}>Giờ Tạo</th>
-    </tr>
-  </thead>
-  <tbody>
-    {projects.map((p) => {
-      const date = p.createdAt.date;
-      const time = p.createdAt.time;
+                  <thead>
+                    <tr className='about-table-title'>
+                      <th>Tên Dự Án</th>
+                      <th>Ngày Tạo</th>
+                      <th>Giờ Tạo</th>
+                      <th>Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projects.map((p) => (
+                      <tr className='about-table' key={p.id}>
+                        <td>{p.name}</td>
+                        <td>{p.createdAt.date}</td>
+                        <td>{p.createdAt.time}</td>
+                        <td>
+                        <button
+  style={{
+    backgroundColor: "#388e3c",
+    color: "#fff",
+    border: "none",
+    borderRadius: "10px",
+    padding: "8px 16px",
+    cursor: "pointer",
+    fontWeight: "500",
+    transition: "background-color 0.3s",
+    
+  }}
+  onMouseEnter={(e) => e.target.style.backgroundColor = "#2e7031"}
+  onMouseLeave={(e) => e.target.style.backgroundColor = "#388e3c"}
+  onClick={() => navigate(`/project/${p.id}`)}
+>
+  Xem
+</button>
 
-      return (
-        <tr key={p.id} onClick={() => window.location.href = `/project/${p.id}`}>
-          <td>{p.name}</td>
-          <td style={{textAlign:'center'}}>{date}</td>
-          <td style={{textAlign:'center'}}>{time}</td>
-        </tr>
-      );
-    })}
-  </tbody>
-</table>
-
-
-
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </>
             )}
           </div>
         </div>
       </main>
+      <footer className="footer">
+      <div className="footer-container">
+        <p>© 2025 AgriGuard. All rights reserved.</p>
+        <p>
+          Made by Trương Gia Quyền - <a href="https://github.com/your-repo" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </p>
+      </div>
+    </footer>
     </div>
   );
 }

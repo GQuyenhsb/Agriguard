@@ -363,3 +363,34 @@ body {
   }
 }
 
+.footer {
+  background-color: #2e7d32;
+  color: white;
+  padding: 10px 0;
+  text-align: center;
+  margin-top: 40px;
+  font-size: 14px;
+  box-shadow: 0 -1px 6px rgba(0, 0, 0, 0.1);
+}
+
+.footer a {
+  color: #ffffff;
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+.footer a:hover {
+  color: #c8e6c9;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.about-table-title th{
+  text-align: center;
+}
+.about-table td{
+  text-align: center;
+}

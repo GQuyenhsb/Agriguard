@@ -1,0 +1,21 @@
+{
+  "files": {
+    "main.css": "/AgriGuard/static/css/main.101b049a.css",
+    "main.js": "/AgriGuard/static/js/main.270e6f3c.js",
+    "static/js/453.7872b54d.chunk.js": "/AgriGuard/static/js/453.7872b54d.chunk.js",
+    "static/media/background.jpg": "/AgriGuard/static/media/background.ffee04477cdc63072eb0.jpg",
+    "static/media/p1.png": "/AgriGuard/static/media/p1.804083c754e2df194e7f.png",
+    "static/media/logo-menu.jpg": "/AgriGuard/static/media/logo-menu.eb74ef08a2107c6ccf1c.jpg",
+    "static/media/p4.png": "/AgriGuard/static/media/p4.6e7f1c9cca2a7ebc5e98.png",
+    "static/media/p2.png": "/AgriGuard/static/media/p2.fe80cb2c66a901ee2261.png",
+    "static/media/tuoi-cay.png": "/AgriGuard/static/media/tuoi-cay.490129111260058644df.png",
+    "index.html": "/AgriGuard/index.html",
+    "main.101b049a.css.map": "/AgriGuard/static/css/main.101b049a.css.map",
+    "main.270e6f3c.js.map": "/AgriGuard/static/js/main.270e6f3c.js.map",
+    "453.7872b54d.chunk.js.map": "/AgriGuard/static/js/453.7872b54d.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.101b049a.css",
+    "static/js/main.270e6f3c.js"
+  ]
+}

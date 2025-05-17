@@ -4,7 +4,7 @@ import axios from 'axios';
 import './Chatbot.css';
 import dashboardImage from '../assets/tuoi-cay.png'; 
 
-function Chatbot({ projectId, projectName }) {
+function Chatbot({ projectId, projectName, createdAt  }) {
   const [fruitType, setFruitType] = useState('');
   const [city, setCity] = useState('');
   const [result, setResult] = useState('');
@@ -20,103 +20,97 @@ function Chatbot({ projectId, projectName }) {
 
   const inputRef = useRef(null);
   const navigate = useNavigate();
+  const hasFetchedLocation = useRef(false);
+  const isFirstSave = useRef(true);
+  const hasGeneratedPrompt = useRef(false);
+
+
 
   // Load project data from database when component mounts
-  useEffect(() => {
-    if (!projectId) {
-      console.warn('No projectId provided, cannot load project data');
-      return;
-    }
+  const hasLoadedData = useRef(false);
 
+  useEffect(() => {
+    if (!projectId || hasLoadedData.current) return;
+  
+    hasLoadedData.current = true;
     const loadProjectData = async () => {
       try {
-        console.log(`Loading data for project-${projectId}`);
         const response = await axios.post('http://localhost:5000/api/project/load', { projectId });
         if (response.data.success) {
-          const parsedData = response.data.data;
-          setFruitType(parsedData.fruitType || '');
-          setCity(parsedData.city || '');
-          setResult(parsedData.result || '');
-          setWeather(parsedData.weather || null);
-          setLocation(parsedData.location || null);
-          setProjectInitialized(parsedData.projectInitialized || false);
-          setHistory(parsedData.history || []);
-          setTasks(parsedData.tasks || []);
-          setTaskStatus(parsedData.taskStatus || {});
-          console.log(`Successfully loaded data for project-${projectId}`, parsedData);
-        } else {
-          console.log(`No data found for project-${projectId}`);
+          const data = response.data.data;
+          setFruitType(data.fruitType || '');
+          setCity(data.city || '');
+          setResult(data.result || '');
+          setWeather(data.weather || null);
+          setLocation(data.location || null);
+          setProjectInitialized(data.projectInitialized || false);
+          setHistory(data.history || []);
+          setTasks(data.tasks || []);
+          setTaskStatus(data.taskStatus || {});
         }
-      } catch (error) {
-        console.error(`Failed to load data for project-${projectId}:`, error);
-        setResult('Không thể tải dữ liệu dự án: ' + (error.response?.data?.error || error.message));
+      } catch (err) {
+        console.error('Load error:', err);
+        setResult('Lỗi tải dữ liệu: ' + (err.response?.data?.error || err.message));
       }
     };
-
+  
     loadProjectData();
-
-    // Focus input and get location only if not initialized
-    if (inputRef.current && !projectInitialized) {
-      inputRef.current.focus();
-    }
-    if (!projectInitialized) {
+  
+    if (!projectInitialized && !hasFetchedLocation.current) {
+      hasFetchedLocation.current = true;
       handleGetLocation();
     }
+    if (inputRef.current && !projectInitialized) inputRef.current.focus();
   }, [projectId, projectInitialized]);
+  
+
+  const generateScheduleDates = () => {
+    if (!createdAt || !createdAt.date) return [];
+    const base = new Date(createdAt.date.split('/').reverse().join('/')); // "dd/mm/yyyy" -> Date
+    const result = [];
+    for (let i = 0; i < 4; i++) {
+      const next = new Date(base);
+      next.setDate(base.getDate() + i * 7);
+      result.push(next.toLocaleDateString('vi-VN'));
+    }
+    return result;
+  };
+  
+  const scheduleDates = generateScheduleDates();
+  
+
 
   // Save project data to database whenever relevant state changes
+  const isFirstRender = useRef(true);
+  const isHandlingPrompt = useRef(false);
+  
   useEffect(() => {
-    if (!projectId) {
-      console.warn('No projectId provided, cannot save project data');
+    if (!projectId || isFirstSave.current) {
+      isFirstSave.current = false;
       return;
     }
-
-    const saveProjectData = async () => {
-      const projectData = {
-        fruitType,
-        city,
-        result,
-        weather,
-        location,
-        projectInitialized,
-        history,
-        tasks,
-        taskStatus,
+  
+    const saveData = async () => {
+      const payload = {
+        fruitType, city, result, weather, location, projectInitialized,
+        history, tasks, taskStatus
       };
-
+  
       try {
-        console.log(`Saving data for project-${projectId}`, projectData);
-        const response = await axios.post('http://localhost:5000/api/project/save', {
+        await axios.post('http://localhost:5000/api/project/save', {
           projectId,
-          data: projectData,
+          data: payload
         });
-        if (response.data.success) {
-          console.log(`Successfully saved data for project-${projectId}`);
-        } else {
-          console.error(`Failed to save data for project-${projectId}:`, response.data.error);
-        }
-      } catch (error) {
-        console.error(`Failed to save data for project-${projectId}:`, error);
+      } catch (e) {
+        console.error('Save error:', e);
       }
     };
-
-    // Only save if the project has been initialized or has meaningful data
-    if (projectInitialized || fruitType || city || result || history.length > 0) {
-      saveProjectData();
-    }
-  }, [
-    fruitType,
-    city,
-    result,
-    weather,
-    location,
-    projectInitialized,
-    history,
-    tasks,
-    taskStatus,
-    projectId,
-  ]);
-
+  
+    const stringifiedData = JSON.stringify({ fruitType, city, result, weather, location, projectInitialized, history, tasks, taskStatus });
+    saveData();
+  
+  }, [fruitType, city, result, weather, location, projectInitialized, history, tasks, taskStatus, projectId]);
+  
   // Fetch weather every 10 minutes for real-time updates when city is available
   useEffect(() => {
     if (!city) return;
@@ -180,6 +174,8 @@ function Chatbot({ projectId, projectName }) {
           const locationData = locationResponse.data.result;
           setLocation(locationData);
           setCity(locationData.city || '');
+          fetchWeather(locationData.city || '');
+          
 
           // Weather is fetched automatically via the useEffect when city is set
         } catch (error) {
@@ -248,12 +244,12 @@ Tốc độ gió: ${weather.wind_speed} m/s
 •Bước 2: [Trả lời]
 [Thêm các bước nữa nếu có]
 
-•3. Giám sát và chăm sóc (Bắt đầu từ ):
+•3. Giám sát và chăm sóc:
 
 •(Thời gian biểu này là gợi ý, bạn cần điều chỉnh dựa trên tình hình thực tế của cây)
 
-| Ngày | Giờ | Hoạt động | Số liệu/Ghi chú |
-| [Trả lời] | [Trả lời] | [Trả lời] |
+| Hoạt động | Số liệu/Ghi chú |
+ [Trả lời] | [Trả lời] |
 •Lưu ý: [Trả lời]
 
 •4. Cập nhật từ bạn:
@@ -287,48 +283,41 @@ ${lastResult}
 | [Trả lời] | [Trả lời] | [Trả lời] |
 •Lưu ý: [Trả lời]`;
   };
-
   const handleSubmitPrompt = async (e) => {
     e.preventDefault();
-    if (!fruitType.trim()) {
-      setResult('Vui lòng nhập loại quả!');
-      return;
-    }
-    if (!weather || !city) {
-      setResult('Vui lòng lấy vị trí và thời tiết trước!');
-      return;
-    }
-    setLoading(true);
+    if (!fruitType.trim() || !weather || !city || hasGeneratedPrompt.current) return;
     const prompt = generateInitialPrompt();
+    if (prompt.includes('Vui lòng lấy vị trí')) {
+      setResult(prompt);
+      return;
+    }
+  
+    setLoading(true);
+    isHandlingPrompt.current = true; // 🟢 bật cờ
+  
     try {
-      const response = await axios.post('http://localhost:5000/api/generate', {
-        prompt: `Dự án ${projectName} (ID: ${projectId}): ${prompt}`,
+      const res = await axios.post('http://localhost:5000/api/generate', {
+        prompt: `Dự án ${projectName} (ID: ${projectId}): ${prompt}`
       });
-      const newResult = response.data.result;
+      const newResult = res.data.result;
       setResult(newResult);
       setProjectInitialized(true);
+      hasGeneratedPrompt.current = true;
       const date = getCurrentDate();
       setHistory([...history, { date, prompt, result: newResult }]);
-
-      // Extract tasks from the "Giám sát và chăm sóc" section
       const taskSection = newResult.split('•3. Giám sát và chăm sóc')[1]?.split('•4. Cập nhật từ bạn')[0] || '';
       const tableRows = taskSection.match(/\|.*\|.*\|.*\|.*\|/g) || [];
-      const extractedTasks = tableRows
-        .map(row => {
-          const [, date, time, activity] = row.split('|').map(s => s.trim());
-          return { date, time, activity };
-        })
-        .filter(task => task.date && task.time && task.activity);
-      
+      const extractedTasks = tableRows.map(row => {
+        const [, date, time, activity] = row.split('|').map(s => s.trim());
+        return { date, time, activity };
+      }).filter(task => task.date && task.time && task.activity);
       setTasks(extractedTasks);
-      setTaskStatus(extractedTasks.reduce((acc, task) => ({
-        ...acc,
-        [`${task.date} - ${task.activity}`]: false
-      }), {}));
-    } catch (error) {
-      console.error('Failed to submit prompt:', error);
-      setResult('Đã xảy ra lỗi: ' + (error.response?.data?.error || error.message));
+      setTaskStatus(extractedTasks.reduce((acc, task) => ({ ...acc, [`${task.date} - ${task.activity}`]: false }), {}));
+    } catch (err) {
+      setResult('Đã xảy ra lỗi: ' + (err.response?.data?.error || err.message));
     }
+  
+    isHandlingPrompt.current = false; // 🔴 tắt cờ sau khi hoàn tất
     setLoading(false);
   };
 
@@ -406,7 +395,7 @@ ${lastResult}
 
   return (
     <div className="container">
-    <a href="/" class="back-link">← Quay lại trang chủ</a>
+    <a href="/AgriGuard/" className="back-link">← Quay lại trang chủ</a>
 
       {/* Khối A */}
       <div className="section-a">
@@ -438,6 +427,8 @@ ${lastResult}
                 {loading ? 'Đang xử lý...' : 'Gửi'}
               </button>
             </form>
+
+
           </div>
         </div>
   
@@ -456,18 +447,26 @@ ${lastResult}
           <div className="row"><h4 style={{color:"#388e3c"}}>Thời tiết tại vị trí của bạn</h4></div>
           <div className="row">
             {weather && !weather.error ? (
-              <p>Địa chỉ: {location.address || 'Không xác định'}</p>
+              <p>
+  Địa chỉ: {location?.address || 'Không xác định'}<br />
+  Nhiệt độ: {weather.temperature}°C<br />
+  Mô tả: {weather.description}<br />
+  Độ ẩm: {weather.humidity}%<br />
+  Gió: {weather.wind_speed} m/s
+</p>
             ) : (
               <p>Đang tải thông tin thời tiết...</p>
             )}
           </div>
         </div>
       </div>
-  
-      {/* Khối B */}
-      <div className="section-b">
-        <h3 className="section-title">Giám sát và chăm sóc (Bắt đầu từ 07/05/2025)</h3>
-        <table className="monitoring-table">
+      {result && (
+  <div className="box section-b" style={{ whiteSpace: 'pre-wrap', marginTop: '20px', backgroundColor: 'white' }}>
+    <h4 style={{color:'#388e3c'}}>Kết quả hướng dẫn từ AI:</h4>
+    <p style={{marginLeft:'20px'}}>{result}</p>
+    <div className="section-b">
+    <h3 className="section-title">Giám sát và chăm sóc (Bắt đầu từ {scheduleDates[0]})</h3>
+    <table className="monitoring-table">
           <thead>
             <tr>
               <th>Ngày</th>
@@ -478,32 +477,37 @@ ${lastResult}
           </thead>
           <tbody>
             <tr>
-              <td>07/05/2025</td>
+            <td>{scheduleDates[0]}</td>
               <td>Sáng</td>
               <td>Kiểm tra độ ẩm đất, tưới nước nếu cần</td>
               <td>Ghi chú lượng nước tưới</td>
             </tr>
             <tr>
-              <td>14/05/2025</td>
+            <td>{scheduleDates[1]}</td>
               <td>Chiều</td>
               <td>Kiểm tra cây có sâu bệnh không, xử lý nếu cần</td>
               <td>Ghi chú loại sâu bệnh, phương pháp xử lý</td>
             </tr>
             <tr>
-              <td>21/05/2025</td>
+            <td>{scheduleDates[2]}</td>
               <td>Sáng</td>
               <td>Bón phân thúc (nếu cần)</td>
               <td>Ghi chú loại phân, lượng phân</td>
             </tr>
             <tr>
-              <td>28/05/2025</td>
+            <td>{scheduleDates[3]}</td>
               <td>Chiều</td>
               <td>Kiểm tra lại độ ẩm đất, tưới nước nếu cần</td>
               <td>Ghi chú lượng nước tưới</td>
             </tr>
           </tbody>
         </table>
-      </div>
+        </div>
+        <p style={{marginLeft:'20px'}}>Lưu ý : Khí hậu Hà Nội mùa hè nắng nóng, cần chú ý tưới nước thường xuyên, đặc biệt trong những ngày nắng gắt. Theo dõi cây thường xuyen để phát hiện xử lý kịp thời</p>
+  </div>
+)}
+      {/* Khối B */}
+     
     </div>
   );
 }  
