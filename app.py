@@ -201,6 +201,12 @@ def get_location():
         print(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+
+
+@app.route('/', methods=['GET'])
+def home():
+    return "✅ Flask backend đang chạy trên Render!"
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 5000))
