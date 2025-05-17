@@ -156,41 +156,43 @@ function Chatbot({ projectId, projectName, createdAt  }) {
     setWeatherLoading(false);
   };
 
-  const handleGetLocation = async () => {
-    if (!navigator.geolocation) {
-      setLocation({ error: 'Trình duyệt không hỗ trợ định vị GPS' });
-      return;
+ const handleGetLocation = () => {
+  if (!navigator.geolocation) {
+    setLocation({ error: 'Trình duyệt không hỗ trợ định vị GPS' });
+    return;
+  }
+
+  navigator.permissions?.query({ name: 'geolocation' }).then((result) => {
+    if (result.state === 'denied') {
+      alert('Bạn đã từ chối quyền truy cập vị trí. Hãy bật lại quyền định vị trong cài đặt trình duyệt.');
     }
+  });
 
-    setLocationLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const locationResponse = await axios.post('http://localhost:5000/api/location', {
-            lat: latitude,
-            lon: longitude,
-          });
-          const locationData = locationResponse.data.result;
-          setLocation(locationData);
-          setCity(locationData.city || '');
-          fetchWeather(locationData.city || '');
-          
-
-          // Weather is fetched automatically via the useEffect when city is set
-        } catch (error) {
-          console.error('Failed to fetch location:', error);
-          setLocation({ error: 'Đã xảy ra lỗi: ' + (error.response?.data?.error || error.message) });
-        }
-        setLocationLoading(false);
-      },
-      (error) => {
-        console.error('Failed to get GPS position:', error);
-        setLocation({ error: 'Không thể lấy vị trí: ' + error.message });
-        setLocationLoading(false);
+  setLocationLoading(true);
+  navigator.geolocation.getCurrentPosition(
+    async ({ coords }) => {
+      try {
+        const res = await axios.post('http://localhost:5000/api/location', {
+          lat: coords.latitude,
+          lon: coords.longitude,
+        });
+        const data = res.data.result;
+        setLocation(data);
+        setCity(data.city || '');
+        fetchWeather(data.city || '');
+      } catch (err) {
+        setLocation({ error: 'Lỗi lấy vị trí: ' + (err.response?.data?.error || err.message) });
       }
-    );
-  };
+      setLocationLoading(false);
+    },
+    (err) => {
+      console.error('❌ Không thể lấy GPS:', err);
+      setLocation({ error: 'Không thể lấy GPS: ' + err.message });
+      setLocationLoading(false);
+    }
+  );
+};
+
 
   const getCurrentDate = () => {
     const today = new Date();
