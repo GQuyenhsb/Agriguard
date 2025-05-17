@@ -4,6 +4,7 @@ import sqlite3
 import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+    
 import google.generativeai as genai
 
 # Lấy API key từ biến môi trường
@@ -29,7 +30,7 @@ GEOAPIFY_BASE_URL = "https://api.geoapify.com/v1/geocode"
 
 # Setup Flask
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "https://gquyenhsb.github.io"}})
 
 # SQLite DB setup
 DB_PATH = "projects.db"
