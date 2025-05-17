@@ -8,6 +8,12 @@ import google.generativeai as genai
 import requests
 import os
 
+
+API_KEY_GEMINI = os.environ.get("API_KEY_GEMINI")
+API_KEY_WEATHER = os.environ.get("API_KEY_WEATHER")
+API_KEY_GEOAPIFY = os.environ.get("API_KEY_GEOAPIFY")
+
+
 app = Flask(__name__)
 CORS(app)
 
@@ -196,4 +202,6 @@ def get_location():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host="0.0.0.0", port=port)
