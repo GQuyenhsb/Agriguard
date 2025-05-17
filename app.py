@@ -1,36 +1,37 @@
-import pathlib
-import textwrap
-import sqlite3
+import os
 import json
+import sqlite3
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
-import requests
-import os
 
-
+# Lấy API key từ biến môi trường
 API_KEY_GEMINI = os.environ.get("API_KEY_GEMINI")
 API_KEY_WEATHER = os.environ.get("API_KEY_WEATHER")
 API_KEY_GEOAPIFY = os.environ.get("API_KEY_GEOAPIFY")
 
-
-app = Flask(__name__)
-CORS(app)
+# Kiểm tra API keys bắt buộc
+if not API_KEY_GEMINI:
+    raise ValueError("Missing environment variable: API_KEY_GEMINI")
+if not API_KEY_WEATHER:
+    raise ValueError("Missing environment variable: API_KEY_WEATHER")
+if not API_KEY_GEOAPIFY:
+    raise ValueError("Missing environment variable: API_KEY_GEOAPIFY")
 
 # Cấu hình Google Gemini API
-API_KEY_GEMINI = "AIzaSyCl0J29n4CN9rHoiiU4x_1feLjkWA_WH9E"
 genai.configure(api_key=API_KEY_GEMINI)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-# Cấu hình OpenWeatherMap API
-API_KEY_WEATHER = "bb83e900d7bea0103169bd81956dcbd9"
+# Base URLs
 WEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
-
-# Cấu hình Geoapify API
-API_KEY_GEOAPIFY = "81fa2a2d04434abeb9e08a71ad2434c0"
 GEOAPIFY_BASE_URL = "https://api.geoapify.com/v1/geocode"
 
-# Initialize SQLite database
+# Setup Flask
+app = Flask(__name__)
+CORS(app)
+
+# SQLite DB setup
 DB_PATH = "projects.db"
 
 def init_db():
@@ -47,10 +48,14 @@ def init_db():
     except Exception as e:
         print(f"Error initializing database: {str(e)}")
 
-# Call init_db when the app starts
 init_db()
 
-# Endpoint to save project data
+# === ROUTES === #
+
+@app.route('/')
+def home():
+    return "✅ Flask backend is live on Render!"
+
 @app.route('/api/project/save', methods=['POST'])
 def save_project():
     try:
@@ -59,26 +64,20 @@ def save_project():
         project_data = data.get('data')
 
         if not project_id or not project_data:
-            print(f"Missing projectId or data: {data}")
             return jsonify({'error': 'Missing projectId or data'}), 400
-
-        # Convert project_data to JSON string
-        data_json = json.dumps(project_data)
 
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT OR REPLACE INTO projects (project_id, data)
                 VALUES (?, ?)
-            """, (project_id, data_json))
+            """, (project_id, json.dumps(project_data)))
             conn.commit()
 
         return jsonify({'success': True})
     except Exception as e:
-        print(f"Error saving project: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-# Endpoint to load project data
 @app.route('/api/project/load', methods=['POST'])
 def load_project():
     try:
@@ -86,7 +85,6 @@ def load_project():
         project_id = data.get('projectId')
 
         if not project_id:
-            print("Missing projectId")
             return jsonify({'error': 'Missing projectId'}), 400
 
         with sqlite3.connect(DB_PATH) as conn:
@@ -95,17 +93,12 @@ def load_project():
             result = cursor.fetchone()
 
         if result:
-            project_data = json.loads(result[0])
-            return jsonify({'success': True, 'data': project_data})
+            return jsonify({'success': True, 'data': json.loads(result[0])})
         else:
-            print(f"No data found for projectId: {project_id}")
             return jsonify({'success': False})
-
     except Exception as e:
-        print(f"Error loading project: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-# Endpoint to delete project data
 @app.route('/api/project/delete', methods=['POST'])
 def delete_project():
     try:
@@ -113,7 +106,6 @@ def delete_project():
         project_id = data.get('projectId')
 
         if not project_id:
-            print("Missing projectId")
             return jsonify({'error': 'Missing projectId'}), 400
 
         with sqlite3.connect(DB_PATH) as conn:
@@ -121,14 +113,10 @@ def delete_project():
             cursor.execute("DELETE FROM projects WHERE project_id = ?", (project_id,))
             conn.commit()
 
-        print(f"Deleted project data for projectId: {project_id}")
         return jsonify({'success': True})
-
     except Exception as e:
-        print(f"Error deleting project: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-# Endpoint cho Google Gemini API
 @app.route('/api/generate', methods=['POST'])
 def generate_content():
     try:
@@ -137,77 +125,64 @@ def generate_content():
         response = model.generate_content(prompt)
         return jsonify({'result': response.text})
     except Exception as e:
-        print(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-# Endpoint cho OpenWeatherMap API
 @app.route('/api/weather', methods=['POST'])
 def get_weather():
     try:
-        data = request.json
-        city = data.get('city', '')
+        city = request.json.get('city', '')
         if not city:
             return jsonify({'error': 'Vui lòng cung cấp tên thành phố'}), 400
 
         url = f"{WEATHER_BASE_URL}?q={city}&appid={API_KEY_WEATHER}&units=metric"
-        print(f"Calling OpenWeatherMap API: {url}")
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         weather_data = response.json()
+
         if response.status_code == 200:
-            result = {
-                'city': city,
-                'temperature': weather_data['main']['temp'],
-                'description': weather_data['weather'][0]['description'],
-                'humidity': weather_data['main']['humidity'],
-                'wind_speed': weather_data['wind']['speed']
-            }
-            return jsonify({'result': result})
+            return jsonify({
+                'result': {
+                    'city': city,
+                    'temperature': weather_data['main']['temp'],
+                    'description': weather_data['weather'][0]['description'],
+                    'humidity': weather_data['main']['humidity'],
+                    'wind_speed': weather_data['wind']['speed']
+                }
+            })
         else:
-            return jsonify({'error': weather_data.get('message', 'Không thể lấy dữ liệu thời tiết')}), 400
+            return jsonify({'error': weather_data.get('message', 'Lỗi lấy dữ liệu thời tiết')}), 400
     except Exception as e:
-        print(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-# Endpoint cho Geoapify API (GPS)
 @app.route('/api/location', methods=['POST'])
 def get_location():
     try:
-        data = request.json
-        lat = data.get('lat')
-        lon = data.get('lon')
+        lat = request.json.get('lat')
+        lon = request.json.get('lon')
 
         if not lat or not lon:
-            return jsonify({'error': 'Vui lòng cung cấp tọa độ lat/lon'}), 400
+            return jsonify({'error': 'Vui lòng cung cấp tọa độ'}), 400
 
-        # Gọi Geoapify Reverse Geocoding API để lấy địa chỉ từ tọa độ
         url = f"{GEOAPIFY_BASE_URL}/reverse?lat={lat}&lon={lon}&apiKey={API_KEY_GEOAPIFY}"
-        response = requests.get(url)
-        location_data = response.json()
+        response = requests.get(url, timeout=10)
+        data = response.json()
 
-        if response.status_code == 200 and location_data.get('features'):
-            feature = location_data['features'][0]['properties']
-            result = {
-                'address': feature.get('formatted', 'Không tìm thấy địa chỉ'),
-                'city': feature.get('city', ''),
-                'country': feature.get('country', ''),
-                'lat': lat,
-                'lon': lon
-            }
-            return jsonify({'result': result})
+        if response.status_code == 200 and data.get('features'):
+            feature = data['features'][0]['properties']
+            return jsonify({
+                'result': {
+                    'address': feature.get('formatted', 'Không tìm thấy địa chỉ'),
+                    'city': feature.get('city', ''),
+                    'country': feature.get('country', ''),
+                    'lat': lat,
+                    'lon': lon
+                }
+            })
         else:
             return jsonify({'error': 'Không thể lấy thông tin vị trí'}), 400
-
     except Exception as e:
-        print(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-
-
-@app.route('/', methods=['GET'])
-def home():
-    return "✅ Flask backend đang chạy trên Render!"
-
+# === RUN APP === #
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host="0.0.0.0", port=port)
+    app.run(debug=True, host='0.0.0.0', port=port)
